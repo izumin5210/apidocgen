@@ -1,0 +1,22 @@
+name: CI
+
+on: [push]
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        image: ["yard", "proto-swagger", "redoc"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - run: docker build ${{ matrix.image }} --tag apidocgen/${{ matrix.image }}:${{ github.sha }}
+    - run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+    - run: docker push apidocgen/${{ matrix.image }}:${{ github.sha }}
+    - run: |
+        docker apidocgen/${{ matrix.image}}:latest apidocgen/${{ matrix.image }}:${{ github.sha }}
+        docker push apidocgen/${{ matrix.image }}:latest
+      if: github.ref == 'refs/heads/master'
